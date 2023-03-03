@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/temporal-tests
+    username: test_user
+    password: test_pass
+  jpa:
+    hibernate:
+      ddl-auto: validate
