@@ -1,0 +1,8 @@
+style:
+  MaxLineLength:
+    maxLineLength: 160
+  UseRequire:
+    active: false
+empty-blocks:
+  EmptyClassBlock:
+    active: false

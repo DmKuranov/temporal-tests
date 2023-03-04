@@ -4,5 +4,6 @@ spring:
     username: test_user
     password: test_pass
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate

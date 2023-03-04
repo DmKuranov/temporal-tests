@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="000" author="default">
+        <createTable tableName="STOCK">
+            <column name="product_id" type="bigint">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="quantity_stock" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_reserved" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="available" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="PRODUCT_SEQ" dataType="bigint"/>
+
+        <createTable tableName="CUSTOMER_ORDER">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="payment_credential" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submitted_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="CUSTOMER_ORDER_ITEM">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="order_id" type="bigint">
+                <constraints nullable="false"
+                             foreignKeyName="CUSTOMER_ORDER_ITEM_FK_CUSTOMER_ORDER"
+                             referencedTableName="CUSTOMER_ORDER" referencedColumnNames="id"
+                />
+            </column>
+            <column name="product_id" type="bigint">
+                <constraints nullable="false"
+                             foreignKeyName="CUSTOMER_ORDER_ITEM_FK_PRODUCT"
+                             referencedTableName="STOCK" referencedColumnNames="product_id"
+                />
+            </column>
+            <column name="quantity_ordered" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_reserved" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_shipped" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="CUSTOMER_ORDER_SEQ" dataType="bigint"/>
+        <createSequence sequenceName="CUSTOMER_ORDER_ITEM_SEQ" dataType="bigint"/>
+    </changeSet>
+</databaseChangeLog>

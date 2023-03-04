@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class TemporalTestsApplication
 
 fun main(args: Array<String>) {
-    runApplication<TemporalTestsApplication>(*args)
+    runApplication<TemporalTestsApplication>(args = args)
 }

@@ -6,6 +6,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.7.22'
     id 'org.jetbrains.kotlin.plugin.spring' version '1.7.22'
     id 'org.jetbrains.kotlin.plugin.jpa' version '1.7.22'
+    id "io.gitlab.arturbosch.detekt" version "1.22.0"
 }
 
 group = 'ru.dmkuranov'
@@ -25,6 +26,7 @@ dependencies {
     implementation 'org.liquibase:liquibase-core'
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
 }
 
 tasks.withType(KotlinCompile) {
@@ -32,8 +34,15 @@ tasks.withType(KotlinCompile) {
         freeCompilerArgs = ['-Xjsr305=strict']
         jvmTarget = '17'
     }
+    dependsOn(tasks.detekt)
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+detekt {
+    allRules = true
+    buildUponDefaultConfig = true
+    config = files("detekt.yaml")
 }
