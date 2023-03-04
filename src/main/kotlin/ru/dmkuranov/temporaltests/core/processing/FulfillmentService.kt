@@ -31,9 +31,13 @@ class FulfillmentService(
         val quantityToReserve = if (availableForReserve > item.quantityOrdered) item.quantityOrdered else availableForReserve
         if (quantityToReserve < item.quantityOrdered) missingItems.add(item.product)
 
-        stockService.updateStock(
-            StockUpdateRequestDto(itemStock)
-            .let { updateRequest -> updateRequest.copy(quantityReserved = updateRequest.quantityReserved + quantityToReserve) })
-        customerOrderService.adjustOrderItem(item.itemId, quantityReserved = quantityToReserve)
+        if (quantityToReserve > 0) {
+            val stockUpdateRequest = StockUpdateRequestDto(itemStock)
+                .copy(quantityReserved = itemStock.quantityReserved + quantityToReserve)
+            stockService.updateStock(stockUpdateRequest)
+            customerOrderService.adjustOrderItem(item.itemId, quantityReserved = quantityToReserve)
+        } else if (quantityToReserve < 0) {
+            throw IllegalArgumentException("Negative quantity reservation detected for orderItemId=${item.itemId} productId=${item.product.productId}")
+        }
     }
 }

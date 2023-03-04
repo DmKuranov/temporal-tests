@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType.SEQUENCE
 import jakarta.persistence.Id
 import jakarta.persistence.SequenceGenerator
 import ru.dmkuranov.temporaltests.util.AbstractEntity
+import java.math.BigDecimal
 
 @Entity(name = "STOCK")
 class StockEntity(
@@ -23,5 +24,8 @@ class StockEntity(
     var quantityReserved: Long? = null,
 
     @Column(nullable = false)
-    var available: Boolean? = null
+    var available: Boolean? = null,
+
+    @Column(nullable = false)
+    var price: BigDecimal? = null
 ) : AbstractEntity()

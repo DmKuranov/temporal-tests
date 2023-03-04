@@ -15,6 +15,7 @@ class StockMapper {
             productId = entity.id!!,
             quantityStock = entity.quantityStock!!,
             quantityReserved = entity.quantityReserved!!,
-            available = entity.available!!
+            available = entity.available!!,
+            price = entity.price!!
         )
 }

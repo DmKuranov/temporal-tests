@@ -18,6 +18,9 @@
             <column name="available" type="boolean">
                 <constraints nullable="false"/>
             </column>
+            <column name="price" type="currency">
+                <constraints nullable="false"/>
+            </column>
             <column name="version" type="bigint">
                 <constraints nullable="false"/>
             </column>
@@ -69,5 +72,33 @@
         </createTable>
         <createSequence sequenceName="CUSTOMER_ORDER_SEQ" dataType="bigint"/>
         <createSequence sequenceName="CUSTOMER_ORDER_ITEM_SEQ" dataType="bigint"/>
+
+        <createTable tableName="CUSTOMER_CHARGE">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="order_id" type="bigint">
+                <constraints nullable="false"
+                             foreignKeyName="CUSTOMER_ORDER_ITEM_FK_CUSTOMER_ORDER"
+                             referencedTableName="CUSTOMER_ORDER" referencedColumnNames="id"
+                />
+            </column>
+            <column name="payment_credential" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="currency">
+                <constraints nullable="false"/>
+            </column>
+            <column name="note" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="charge_time" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createSequence sequenceName="CUSTOMER_CHARGE_SEQ" dataType="bigint"/>
     </changeSet>
 </databaseChangeLog>

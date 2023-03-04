@@ -7,6 +7,7 @@ import ru.dmkuranov.temporaltests.core.stock.db.StockRepository
 import ru.dmkuranov.temporaltests.core.stock.dto.ProductDto
 import ru.dmkuranov.temporaltests.core.stock.dto.StockDto
 import ru.dmkuranov.temporaltests.core.stock.dto.StockUpdateRequestDto
+import java.math.BigDecimal
 
 @Service
 class StockService(
@@ -15,7 +16,7 @@ class StockService(
 ) {
     @Transactional
     fun createProduct(): ProductDto =
-        stockRepository.save(StockEntity(quantityStock = 0, quantityReserved = 0, available = false))
+        stockRepository.save(StockEntity(quantityStock = 0, quantityReserved = 0, available = false, price = BigDecimal.ZERO))
             .let { stockMapper.mapToProductDto(it) }
 
     @Transactional(readOnly = true)
@@ -36,9 +37,18 @@ class StockService(
     fun updateStock(request: StockUpdateRequestDto): StockDto =
         loadStock(request.productId)
             .let { entity ->
-                entity.quantityStock = request.quantityStock
-                entity.quantityReserved = request.quantityReserved
-                entity.available = request.available
+                if (request.quantityStock != null) {
+                    entity.quantityStock = request.quantityStock
+                }
+                if (request.quantityReserved != null) {
+                    entity.quantityReserved = request.quantityReserved
+                }
+                if (request.available != null) {
+                    entity.available = request.available
+                }
+                if (request.price != null) {
+                    entity.price = request.price
+                }
                 stockRepository.save(entity)
             }
             .let { stockMapper.map(it) }
