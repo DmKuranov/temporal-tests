@@ -14,12 +14,14 @@ class CustomerOrderMapper {
             id = entity.id!!,
             paymentCredential = entity.paymentCredential!!,
             items = entity.items!!.map { map(it) },
-            submittedAt = entity.submittedAt!!
+            submittedAt = entity.submittedAt!!,
+            completedAt = entity.completedAt
         )
 
     fun map(entityItem: CustomerOrderItemEntity): CustomerOrderItemDto =
         CustomerOrderItemDto(
             itemId = entityItem.id!!,
+            orderId = entityItem.order!!.id!!,
             product = ProductDto(entityItem.productId!!),
             quantityOrdered = entityItem.quantityOrdered!!,
             quantityReserved = entityItem.quantityReserved!!,

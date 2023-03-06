@@ -6,3 +6,9 @@ style:
 empty-blocks:
   EmptyClassBlock:
     active: false
+potential-bugs:
+  ImplicitDefaultLocale:
+    active: false
+exceptions:
+  TooGenericExceptionCaught:
+    active: false

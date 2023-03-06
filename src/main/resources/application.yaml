@@ -5,5 +5,13 @@ spring:
     password: test_pass
   jpa:
     open-in-view: false
+    show-sql: false
     hibernate:
       ddl-auto: validate
+  cache:
+    cache-names: productsAvailableById
+
+logging:
+  level:
+    root: INFO
+    ru.dmkuranov.temporaltests.core: INFO

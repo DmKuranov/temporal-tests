@@ -1,11 +1,11 @@
 package ru.dmkuranov.temporaltests.core.charge
 
-import org.jetbrains.annotations.TestOnly
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.dmkuranov.temporaltests.core.charge.db.CustomerChargeEntity
 import ru.dmkuranov.temporaltests.core.charge.db.CustomerChargeRepository
 import ru.dmkuranov.temporaltests.core.charge.dto.ChargeDto
+import ru.dmkuranov.temporaltests.core.charge.dto.ChargeRequestDto
 import ru.dmkuranov.temporaltests.core.customerorder.CustomerOrderService
 import ru.dmkuranov.temporaltests.core.stock.StockService
 import java.math.BigDecimal
@@ -17,24 +17,19 @@ class ChargeService(
     private val customerChargeRepository: CustomerChargeRepository,
     private val stockService: StockService,
     private val customerOrderService: CustomerOrderService,
+    private val chargeMapper: ChargeMapper,
     private val clock: Clock
 ) {
 
-    /**
-     * @return charge id
-     */
     @Transactional
-    fun performChargeOnReserve(customerOrderId: Long): Long {
+    fun performChargeOnReserve(customerOrderId: Long): ChargeDto {
         val order = customerOrderService.loadOrder(customerOrderId)
         val productIdToCharges = order.items.map { orderItem ->
             val stock = stockService.getStock(orderItem.product)
             orderItem.product.productId to stock.price.multiply(BigDecimal(orderItem.quantityReserved))
         }
-        if (productIdToCharges.any { it.second <= BigDecimal.ZERO }) {
-            throw IllegalArgumentException("Non positive charge for orderId=$customerOrderId")
-        }
         val chargeAmount = productIdToCharges.sumOf { it.second }
-        return customerChargeRepository.save(
+        val chargeEntity = customerChargeRepository.save(
             CustomerChargeEntity(
                 orderId = customerOrderId,
                 paymentCredential = order.paymentCredential,
@@ -42,19 +37,28 @@ class ChargeService(
                 note = "Charge on reservation",
                 chargeTime = LocalDateTime.now(clock)
             )
-        ).id!!
+        )
+        Thread.sleep(CHARGE_SLEEP_DURATION_MS)
+        return chargeMapper.map(chargeEntity)
     }
 
-    @TestOnly
-    @Transactional(readOnly = true)
-    fun getOrderCharges(customerOrderId: Long): List<ChargeDto> =
-        customerChargeRepository.findByOrderId(customerOrderId)
-            .map {
-                ChargeDto(
-                    id = it.id!!,
-                    orderId = it.orderId!!,
-                    amount = it.amount!!,
-                    note = it.note!!
+    @Transactional
+    fun performCharge(chargeRequest: ChargeRequestDto): ChargeDto =
+        customerOrderService.loadOrder(chargeRequest.orderId)
+            .let { order ->
+                customerChargeRepository.save(
+                    CustomerChargeEntity(
+                        orderId = chargeRequest.orderId,
+                        paymentCredential = order.paymentCredential,
+                        amount = chargeRequest.amount,
+                        note = chargeRequest.note,
+                        chargeTime = LocalDateTime.now(clock)
+                    )
                 )
             }
+            .let { chargeMapper.map(it) }
+
+    companion object {
+        const val CHARGE_SLEEP_DURATION_MS = 50L
+    }
 }

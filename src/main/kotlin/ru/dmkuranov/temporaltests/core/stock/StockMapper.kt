@@ -13,8 +13,10 @@ class StockMapper {
     fun map(entity: StockEntity): StockDto =
         StockDto(
             productId = entity.id!!,
-            quantityStock = entity.quantityStock!!,
+            quantityAvailable = entity.quantityAvailable!!,
             quantityReserved = entity.quantityReserved!!,
+            quantityShipped = entity.quantityShipped!!,
+            quantitySupplyAwaiting = entity.quantitySupplyAwaiting!!,
             available = entity.available!!,
             price = entity.price!!
         )

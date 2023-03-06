@@ -4,6 +4,7 @@ import ru.dmkuranov.temporaltests.core.stock.dto.ProductDto
 
 data class CustomerOrderItemDto(
     val itemId: Long,
+    val orderId: Long,
     val product: ProductDto,
     val quantityOrdered: Long,
     val quantityReserved: Long,

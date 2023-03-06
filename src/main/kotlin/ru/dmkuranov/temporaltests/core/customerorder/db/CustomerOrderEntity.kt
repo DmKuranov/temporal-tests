@@ -10,10 +10,12 @@ import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
 import jakarta.persistence.OrderBy
 import jakarta.persistence.SequenceGenerator
+import jakarta.persistence.Table
 import ru.dmkuranov.temporaltests.util.AbstractEntity
 import java.time.LocalDateTime
 
-@Entity(name = "CUSTOMER_ORDER")
+@Entity
+@Table(name = "CUSTOMER_ORDER")
 class CustomerOrderEntity : AbstractEntity() {
 
     @Id
@@ -28,6 +30,9 @@ class CustomerOrderEntity : AbstractEntity() {
     @Column
     var paymentCredential: String? = null
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     var submittedAt: LocalDateTime? = null
+
+    @Column
+    var completedAt: LocalDateTime? = null
 }

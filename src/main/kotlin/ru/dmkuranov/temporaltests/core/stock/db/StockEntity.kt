@@ -8,24 +8,34 @@ import jakarta.persistence.Id
 import jakarta.persistence.SequenceGenerator
 import ru.dmkuranov.temporaltests.util.AbstractEntity
 import java.math.BigDecimal
+import java.time.LocalDateTime
 
 @Entity(name = "STOCK")
-class StockEntity(
+class StockEntity : AbstractEntity() {
     @Id
     @GeneratedValue(strategy = SEQUENCE, generator = "PRODUCT_SEQ")
     @SequenceGenerator(name = "PRODUCT_SEQ", allocationSize = 1)
     @Column(name = "product_id")
-    override var id: Long? = null,
+    override var id: Long? = null
 
     @Column(nullable = false)
-    var quantityStock: Long? = null,
+    var quantityAvailable: Long? = null
 
     @Column(nullable = false)
-    var quantityReserved: Long? = null,
+    var quantityReserved: Long? = null
 
     @Column(nullable = false)
-    var available: Boolean? = null,
+    var quantityShipped: Long? = null
+
+    @Column(nullable = false)
+    var quantitySupplyAwaiting: Long? = null
+
+    @Column(nullable = false)
+    var available: Boolean? = null
 
     @Column(nullable = false)
     var price: BigDecimal? = null
-) : AbstractEntity()
+
+    @Column
+    var supplyAt: LocalDateTime? = null
+}

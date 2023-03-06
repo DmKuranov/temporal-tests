@@ -1,5 +1,6 @@
 package ru.dmkuranov.temporaltests.core.customerorder
 
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.dmkuranov.temporaltests.core.customerorder.db.CustomerOrderEntity
@@ -21,25 +22,20 @@ class CustomerOrderService(
 
     @Transactional(readOnly = true)
     fun loadOrder(orderId: Long): CustomerOrderDto =
-        customerOrderRepository.findById(orderId)
-            .let {
-                if (it.isPresent) {
-                    return customerOrderMapper.map(it.get())
-                } else {
-                    throw IllegalArgumentException("Customer order not found for id=$orderId")
-                }
-            }
+        customerOrderMapper.map(loadEntity(orderId))
 
     /**
      * @return created order id
      */
     @Transactional
     fun createOrder(request: CustomerOrderCreateRequestDto): Long {
+        val submittedAt = LocalDateTime.now(clock)
         val orderEntity = CustomerOrderEntity()
         orderEntity.items = request.items.map { requestItem ->
             val orderItemEntity = CustomerOrderItemEntity()
             with(orderItemEntity) {
                 order = orderEntity
+                orderSubmittedAt = submittedAt
                 productId = requestItem.product.productId
                 quantityOrdered = requestItem.quantity
                 quantityReserved = 0
@@ -48,8 +44,10 @@ class CustomerOrderService(
             orderItemEntity
         }
         orderEntity.paymentCredential = request.paymentCredential
-        orderEntity.submittedAt = LocalDateTime.now(clock)
-        return customerOrderRepository.save(orderEntity).id!!
+        orderEntity.submittedAt = submittedAt
+        val orderId = customerOrderRepository.save(orderEntity).id!!
+        log.info { "Creating order id=$orderId with " + request.items.map { "[${it.product.productId}]=${it.quantity}" } }
+        return orderId
     }
 
     @Transactional
@@ -69,4 +67,16 @@ class CustomerOrderService(
             }
         }
     }
+
+    @Transactional
+    fun completeOrder(orderId: Long) {
+        val entity = loadEntity(orderId)
+        entity.completedAt = LocalDateTime.now(clock)
+        customerOrderRepository.save(entity)
+    }
+
+    private fun loadEntity(orderId: Long) =
+        customerOrderRepository.findById(orderId).get()
+
+    private val log = KotlinLogging.logger {}
 }

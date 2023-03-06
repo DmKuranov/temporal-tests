@@ -9,9 +9,12 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.SequenceGenerator
+import jakarta.persistence.Table
 import ru.dmkuranov.temporaltests.util.AbstractEntity
+import java.time.LocalDateTime
 
-@Entity(name = "CUSTOMER_ORDER_ITEM")
+@Entity
+@Table(name = "CUSTOMER_ORDER_ITEM")
 class CustomerOrderItemEntity : AbstractEntity() {
 
     @Id
@@ -20,13 +23,16 @@ class CustomerOrderItemEntity : AbstractEntity() {
     override var id: Long? = null
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id")
+    @JoinColumn(name = "order_id", updatable = false)
     var order: CustomerOrderEntity? = null
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
+    var orderSubmittedAt: LocalDateTime? = null
+
+    @Column(nullable = false, updatable = false)
     var productId: Long? = null
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     var quantityOrdered: Long? = null
 
     @Column(nullable = false)

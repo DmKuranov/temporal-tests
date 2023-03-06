@@ -17,11 +17,11 @@ class SampleEntityPersistenceTest : AbstractIntegrationTest() {
         val quantityTarget = 10L
         val product = stockService.createProduct()
         val stock = stockService.getStock(product)
-        assertThat(stock.quantityStock).isNotEqualTo(quantityTarget)
+        assertThat(stock.quantityAvailable).isNotEqualTo(quantityTarget)
 
         val updateRequest = StockUpdateRequestDto(stock)
-            .copy(available = true, quantityStock = 10)
+            .copy(available = true, quantityAvailable = 10)
         val stockUpdated = stockService.updateStock(updateRequest)
-        assertThat(stockUpdated.quantityStock).isEqualTo(quantityTarget)
+        assertThat(stockUpdated.quantityAvailable).isEqualTo(quantityTarget)
     }
 }
