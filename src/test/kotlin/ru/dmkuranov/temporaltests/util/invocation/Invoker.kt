@@ -1,5 +1,6 @@
 package ru.dmkuranov.temporaltests.util.invocation
 
+import io.grpc.StatusRuntimeException
 import org.springframework.dao.CannotAcquireLockException
 import org.springframework.orm.ObjectOptimisticLockingFailureException
 import ru.dmkuranov.temporaltests.util.processing.ProcessingException
@@ -55,8 +56,26 @@ interface Invoker<T> {
             exceptionClasses = listOf(ObjectOptimisticLockingFailureException::class.java, CannotAcquireLockException::class.java)
         )
 
+        val temporalOpenToClosedTransitionRetry = object : Invoker<Any?> {
+            override fun <R> invoke(func: () -> R) =
+                invokeWithRetryConditional(
+                    initialIntervalMs = 500,
+                    backoffCoefficient = 1.2,
+                    maxIntervalMs = 10000,
+                    exceptionSwallower = { exception ->
+                        if (exception is StatusRuntimeException && (
+                                exception.message!!.startsWith("FAILED_PRECONDITION: Workflow state is not ready to handle the request") ||
+                                    exception.message!!.startsWith("NOT_FOUND: Workflow executionsRow not found")
+                                )
+                        ) Unit
+                        else throw exception
+                    },
+                    invocation = func
+                )
+        }
+
         @Suppress("LongParameterList")
-        private fun <R> invokeWithRetryConditional(
+        fun <R> invokeWithRetryConditional(
             initialIntervalMs: Int,
             backoffCoefficient: Double,
             maxIntervalMs: Long,

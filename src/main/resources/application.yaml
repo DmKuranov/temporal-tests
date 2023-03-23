@@ -10,8 +10,29 @@ spring:
       ddl-auto: validate
   cache:
     cache-names: productsAvailableById
+  temporal:
+    connection:
+      target: 127.0.0.1:7233
+    namespace: default
+    workers:
+      - task-queue: OrderTaskQueue_v1
+        capacity:
+          max-concurrent-workflow-task-pollers: 10
+          max-concurrent-activity-task-pollers: 10
+          max-concurrent-workflow-task-executors: 20
+          max-concurrent-activity-executors: 20
+          max-concurrent-local-activity-executors: 0
+        rate-limits:
+          max-worker-activities-per-second: 0
+          max-task-queue-activities-per-second: 0
+    workflow-cache:
+      max-instances: 20
+      max-threads: 20
+    workers-auto-discovery:
+      packages: ru.dmkuranov.temporaltests.temporal
 
 logging:
   level:
     root: INFO
+    io.temporal.internal.activity: ERROR
     ru.dmkuranov.temporaltests: INFO
