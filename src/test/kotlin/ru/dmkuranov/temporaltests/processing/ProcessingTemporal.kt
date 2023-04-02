@@ -9,11 +9,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.mockito.Mockito
 import ru.dmkuranov.temporaltests.AbstractTemporalTest
 import ru.dmkuranov.temporaltests.core.customerorder.dto.CustomerOrderCreateRequestDto
 import ru.dmkuranov.temporaltests.core.customerorder.dto.CustomerOrderItemCreateRequestDto
 import ru.dmkuranov.temporaltests.core.stock.dto.ProductDto
+import ru.dmkuranov.temporaltests.core.stock.dto.StockUpdateRequestDto
 import ru.dmkuranov.temporaltests.temporal.TemporalConfiguration
+import ru.dmkuranov.temporaltests.temporal.TemporalNonRetryableException
 import ru.dmkuranov.temporaltests.temporal.workflow.order.CustomerOrderWorkflow
 import ru.dmkuranov.temporaltests.temporal.workflow.order.CustomerOrderWorkflowResultDto
 import ru.dmkuranov.temporaltests.temporal.workflow.supplemental.ResupplyPlannerWorkflow
@@ -21,6 +24,7 @@ import ru.dmkuranov.temporaltests.temporal.workflow.supplemental.ShutdownableWor
 import ru.dmkuranov.temporaltests.temporal.workflow.supplemental.StealerWorkflow
 import ru.dmkuranov.temporaltests.util.asserts.SnapshotStateDeltaAssert
 import ru.dmkuranov.temporaltests.util.supplier.OrderCreateRequestSupplier
+import java.math.BigDecimal
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
@@ -61,7 +65,69 @@ class ProcessingTemporal : AbstractTemporalTest() {
         SnapshotStateDeltaAssert.assertThat(snapshotDelta)
             .ordersProcessed(1)
             .itemsQuantityShippedTotal(14)
+            .chargebacksNotPresent()
             .balanceMatchStrict()
+    }
+
+    @Test
+    @Order(1)
+    fun fullCompensationTest(testInfo: TestInfo) {
+        val initialQuantity = 10L
+        val availableQuantityAfterStealing = 3L
+
+        val product1 = createProduct(initialQuantity)
+        val product2 = createProduct(initialQuantity)
+        assertStockQuantitiesUntouched(listOf(product1 to initialQuantity, product2 to initialQuantity))
+
+        Mockito.doAnswer { invocation ->
+            val result = invocation.callRealMethod()
+            val stock = stockService.getStock(product1)
+            stockService.updateStock(StockUpdateRequestDto(stock).copy(quantityAvailable = availableQuantityAfterStealing))
+            result
+        }.`when`(fulfillmentService).reserveItems(Mockito.anyLong())
+
+        Mockito.doAnswer { _ ->
+            Mockito.reset(customerOrderService)
+            throw TemporalNonRetryableException()
+        }.`when`(customerOrderService).completeOrder(Mockito.anyLong())
+
+        val snapshot = snapshotService.createSnapshot()
+
+        val workflowId = generateWorkflowId(testInfo)
+        val workflow = workflowClient.newWorkflowStub(
+            CustomerOrderWorkflow::class.java,
+            WorkflowOptions.getDefaultInstance()
+                .toBuilder()
+                .setTaskQueue(TemporalConfiguration.TASK_QUEUE_NAME)
+                .setWorkflowId(workflowId)
+                .build()
+        )
+
+        val orderCreateRequest = CustomerOrderCreateRequestDto(
+            items = listOf(
+                CustomerOrderItemCreateRequestDto(product = product1, quantity = 4),
+                CustomerOrderItemCreateRequestDto(product = product2, quantity = 15)
+            ), paymentCredential = "card-${System.currentTimeMillis()}"
+        )
+
+        WorkflowClient.start(workflow::process, orderCreateRequest)!!
+
+        val wfStub = workflowClient.newUntypedWorkflowStub(workflowId)
+        val wfResult = wfStub.getResult(CustomerOrderWorkflowResultDto::class.java)
+        Assertions.assertThat(wfResult.failed).isTrue
+
+        assertStockQuantitiesUntouched(listOf(product1 to availableQuantityAfterStealing, product2 to initialQuantity))
+        val charges = chargeService.getCharges(wfResult.orderId)
+        Assertions.assertThat(charges).hasSize(3)
+        Assertions.assertThat(charges.sumOf { it.amount }).isEqualByComparingTo(BigDecimal.ZERO)
+
+        val snapshotActual = snapshotService.createSnapshot()
+        val snapshotDelta = snapshotActual.delta(snapshot)
+        SnapshotStateDeltaAssert.assertThat(snapshotDelta)
+            .ordersProcessed(1)
+            .itemsQuantityShippedTotal(0)
+            .chargebacksPresent()
+            .balanceMatch()
     }
 
     @Test
@@ -99,6 +165,7 @@ class ProcessingTemporal : AbstractTemporalTest() {
         SnapshotStateDeltaAssert.assertThat(snapshotDelta)
             .ordersProcessed(ordersToProcess)
             .itemsQuantityShippedTotal(orderCreateRequestSupplier)
+            .chargebacksNotPresent()
             .balanceMatchStrict()
     }
 
@@ -128,6 +195,7 @@ class ProcessingTemporal : AbstractTemporalTest() {
         SnapshotStateDeltaAssert.assertThat(snapshotDelta)
             .ordersProcessed(ordersToProcess)
             .itemsQuantityShippedTotal(orderCreateRequestSupplier)
+            .chargebacksNotPresent()
             .balanceMatchStrict()
     }
 
@@ -193,7 +261,77 @@ class ProcessingTemporal : AbstractTemporalTest() {
                 shippingToAverageOrderedRatio = shippingToAverageOrderedRatioFull - shippingToAverageOrderedRatioResupplyAffect -
                     shippingToAverageOrderedRatioStealingAffect - shippingToAverageOrderedRatioTolerance
             )
+            .chargebacksPresent()
             .balanceMatch()
+    }
+
+    @Test
+    @Order(6)
+    fun multipleOrderParallelProcessWithFailureCompensationTest(testInfo: TestInfo) {
+        val failureRatio = 0.30
+        mockServiceFailures(totalFailureRatio = failureRatio)
+
+        val productCount = 10
+        val ordersToProcess = 300
+        val orderCreateRequestSupplier = orderCreateRequestSupplierBuilder
+            .builder(createProducts(count = productCount, initialStockQuantity = 10000000))
+            .copy(maxItemQuantity = 25).build()
+
+        val snapshot = snapshotService.createSnapshot()
+
+        executeProcessing(
+            testInfo = testInfo,
+            orderCreateRequestSupplier = orderCreateRequestSupplier,
+            ordersToProcess = ordersToProcess
+        )
+
+        val snapshotActual = snapshotService.createSnapshot()
+        val snapshotDelta = snapshotActual.delta(snapshot)
+        SnapshotStateDeltaAssert.assertThat(snapshotDelta)
+            .ordersProcessed(ordersToProcess)
+            .balanceMatchStrict()
+            .itemsQuantityShippedTotalAdequate(
+                orderCreateRequestSupplier = orderCreateRequestSupplier,
+                shippingToAverageOrderedRatio = shippingToAverageOrderedRatioFull - failureRatio -
+                    shippingToAverageOrderedRatioTolerance
+            )
+    }
+
+    @Test
+    @Order(7)
+    fun multipleOrderParallelProcessWithResupplyAndStealWithFailureCompensationTest(testInfo: TestInfo) {
+        val failureRatio = 0.30
+        mockServiceFailures(totalFailureRatio = failureRatio)
+
+        val productCount = 10
+        val productInitialStock = 100L
+        val ordersToProcess = 1000
+
+        val products = createProducts(count = productCount, initialStockQuantity = productInitialStock)
+        val orderCreateRequestSupplier = orderCreateRequestSupplierBuilder.builder(products)
+            .copy(maxItemQuantity = 25, retryNoAvailableProducts = true).build()
+
+        val snapshot = snapshotService.createSnapshot()
+
+        executeProcessing(
+            testInfo = testInfo,
+            orderCreateRequestSupplier = orderCreateRequestSupplier,
+            ordersToProcess = ordersToProcess,
+            resupplyEnabled = true,
+            stealEnabled = true
+        )
+
+        val snapshotActual = snapshotService.createSnapshot()
+        val snapshotDelta = snapshotActual.delta(snapshot)
+        SnapshotStateDeltaAssert.assertThat(snapshotDelta)
+            .ordersProcessed(ordersToProcess)
+            .balanceMatch()
+            .itemsQuantityShippedTotalAdequate(
+                orderCreateRequestSupplier = orderCreateRequestSupplier,
+                shippingToAverageOrderedRatio = shippingToAverageOrderedRatioFull - failureRatio -
+                    shippingToAverageOrderedRatioResupplyAffect - shippingToAverageOrderedRatioStealingAffect - shippingToAverageOrderedRatioTolerance
+            )
+            .chargebacksPresent()
     }
 
     private fun executeProcessing(
@@ -273,19 +411,14 @@ class ProcessingTemporal : AbstractTemporalTest() {
         )!!
             .let { it to WorkflowClient.start(it::startSteal, products) }
 
-    @BeforeEach
-    fun beforeEach() {
-        terminateOpenExecutions()
+    private fun assertStockQuantitiesUntouched(productToQuantities: List<Pair<ProductDto, Long>>) {
+        productToQuantities.forEach { productToQuantity ->
+            val stock = stockService.getStock(productToQuantity.first)
+            Assertions.assertThat(stock.quantityAvailable).isEqualTo(productToQuantity.second)
+            Assertions.assertThat(stock.quantityReserved).isEqualTo(0L)
+            Assertions.assertThat(stock.quantityShipped).isEqualTo(0L)
+        }
     }
-
-    @BeforeAll
-    fun beforeAll() {
-        terminateOpenExecutions()
-        deleteClosedExecutions()
-    }
-
-    private fun generateWorkflowId(testInfo: TestInfo) =
-        "test-" + testInfo.testMethod.get().name + "-" + System.nanoTime()
 
     companion object {
         private const val shippingToAverageOrderedRatioFull = 1.0

@@ -40,9 +40,11 @@ dependencies {
     implementation 'org.cache2k:cache2k-spring:2.6.1.Final'
     implementation "io.temporal:temporal-sdk:$temporalJavaSdkVersion"
     implementation "io.temporal:temporal-spring-boot-autoconfigure-alpha:$temporalJavaSdkVersion"
+    implementation "io.temporal:temporal-kotlin:$temporalJavaSdkVersion"
     implementation 'org.reflections:reflections:0.10.2'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.assertj:assertj-core:3.24.2'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:4.1.0'
 }
 
 tasks.withType(KotlinCompile) {

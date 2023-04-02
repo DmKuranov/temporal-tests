@@ -6,6 +6,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.test.context.ActiveProfiles
 import ru.dmkuranov.temporaltests.core.charge.ChargeService
@@ -33,13 +34,13 @@ abstract class AbstractIntegrationTest {
     @Autowired
     protected lateinit var stockService: StockService
 
-    @Autowired
+    @SpyBean
     protected lateinit var customerOrderService: CustomerOrderService
 
-    @Autowired
+    @SpyBean
     protected lateinit var fulfillmentService: FulfillmentService
 
-    @Autowired
+    @SpyBean
     protected lateinit var chargeService: ChargeService
 
     @Autowired

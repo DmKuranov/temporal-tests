@@ -34,4 +34,13 @@ class CustomerOrderActivitiesImpl(
 
     override fun completeOrder(orderId: Long) =
         customerOrderService.completeOrder(orderId)
+
+    override fun performChargeSafe(chargeRequest: ChargeRequestDto) =
+        chargeService.performChargeSafe(chargeRequest)
+
+    override fun cancelReserve(orderId: Long) =
+        fulfillmentService.cancelReserve(orderId)
+
+    override fun cancelShipping(orderId: Long) =
+        fulfillmentService.cancelShipping(orderId)
 }

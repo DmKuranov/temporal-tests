@@ -48,6 +48,48 @@ class FulfillmentService(
             result
         }
 
+    @Transactional
+    fun cancelShipping(orderId: Long) =
+        customerOrderService.loadOrder(orderId).let {
+            it.items.forEach { orderItem ->
+                val itemQuantityShipped = orderItem.quantityShipped
+                val stock = stockService.getStock(orderItem.product)
+                stockService.updateStock(
+                    StockUpdateRequestDto(stock)
+                        .copy(
+                            quantityShipped = stock.quantityShipped - itemQuantityShipped,
+                            quantityReserved = stock.quantityReserved + itemQuantityShipped,
+                            quantityAvailable = stock.quantityAvailable + itemQuantityShipped
+                        )
+                )
+                customerOrderService.adjustOrderItem(orderItem.itemId, quantityShipped = 0)
+            }
+            log.info { "Cancelling shipping order id=$orderId" }
+        }
+
+    @Transactional
+    fun cancelReserve(orderId: Long) =
+        customerOrderService.loadOrder(orderId).let {
+            it.items.forEach { orderItem ->
+                require(orderItem.quantityShipped == 0L) { "No reserve cancellation allowed for shipped item: order id=$orderId item id=${orderItem.itemId}" }
+                val itemQuantityReserved = orderItem.quantityReserved
+                val stock = stockService.getStock(orderItem.product)
+                val quantityToUnreserve =
+                    if (stock.quantityReserved > itemQuantityReserved)
+                        itemQuantityReserved
+                    else
+                        stock.quantityReserved
+                stockService.updateStock(
+                    StockUpdateRequestDto(stock)
+                        .copy(
+                            quantityReserved = stock.quantityReserved - quantityToUnreserve
+                        )
+                )
+                customerOrderService.adjustOrderItem(orderItem.itemId, quantityReserved = 0)
+            }
+            log.info { "Cancelling reserve order id=$orderId" }
+        }
+
     /**
      * @returns успешность резервирования
      */

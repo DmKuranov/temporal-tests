@@ -14,4 +14,7 @@ interface CustomerOrderActivities {
     fun shipItems(orderId: Long): ChargeRequestDto?
     fun performCharge(chargeRequest: ChargeRequestDto): ChargeDto
     fun completeOrder(orderId: Long): Unit
+    fun performChargeSafe(chargeRequest: ChargeRequestDto): ChargeDto
+    fun cancelReserve(orderId: Long)
+    fun cancelShipping(orderId: Long)
 }

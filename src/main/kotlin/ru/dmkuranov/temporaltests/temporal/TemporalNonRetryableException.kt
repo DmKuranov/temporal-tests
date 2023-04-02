@@ -1,4 +1,4 @@
 package ru.dmkuranov.temporaltests.temporal
 
-class TemporalNonRetryableException : Exception() {
+class TemporalNonRetryableException : RuntimeException() {
 }

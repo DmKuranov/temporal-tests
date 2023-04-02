@@ -13,6 +13,7 @@ class SnapshotStateDeltaAssert(actual: SnapshotStateDelta, selfType: Class<*>?) 
     fun balanceMatchStrict(): SnapshotStateDeltaAssert {
         balanceMatch()
         with(actual) {
+            Assertions.assertThat(stockQuantities.keys).containsAll(orderQuantities.keys)
             Assertions.assertThat(stockQuantities).allSatisfy { _, stockAggregate ->
                 Assertions.assertThat(stockAggregate.quantityAvailable).isEqualTo(-stockAggregate.quantityShipped)
             }
@@ -22,8 +23,6 @@ class SnapshotStateDeltaAssert(actual: SnapshotStateDelta, selfType: Class<*>?) 
 
     fun balanceMatch(): SnapshotStateDeltaAssert {
         with(actual) {
-            Assertions.assertThat(stockQuantities.keys).containsAll(orderQuantities.keys)
-
             Assertions.assertThat(stockQuantities).allSatisfy { productId, stockAggregate ->
                 Assertions.assertThat(stockAggregate.quantityReserved).isEqualTo(0L)
                 val orderAggregate = orderQuantities[productId]!!

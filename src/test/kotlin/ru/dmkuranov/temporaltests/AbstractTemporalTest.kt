@@ -13,12 +13,19 @@ import io.temporal.api.workflowservice.v1.WorkflowServiceGrpc
 import io.temporal.client.WorkflowClient
 import io.temporal.workflow.WorkflowInterface
 import mu.KotlinLogging
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.TestInfo
+import org.mockito.Mockito
+import org.mockito.kotlin.any
 import org.reflections.Reflections
 import org.reflections.scanners.Scanners
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import ru.dmkuranov.temporaltests.temporal.TemporalConfiguration
+import ru.dmkuranov.temporaltests.temporal.TemporalNonRetryableException
 import ru.dmkuranov.temporaltests.util.invocation.Invoker
+import kotlin.random.Random
 
 abstract class AbstractTemporalTest : AbstractIntegrationTest() {
 
@@ -34,6 +41,20 @@ abstract class AbstractTemporalTest : AbstractIntegrationTest() {
             .map { it.simpleName }
     }
 
+    @BeforeEach
+    fun beforeEach() {
+        terminateOpenExecutions()
+    }
+
+    @BeforeAll
+    fun beforeAll() {
+        terminateOpenExecutions()
+        deleteClosedExecutions()
+    }
+
+    protected fun generateWorkflowId(testInfo: TestInfo) =
+        "test-" + testInfo.testMethod.get().name + "-" + System.nanoTime()
+
     protected fun terminateOpenExecutions() {
         terminateExecutions(listWfApiOpen)
     }
@@ -41,6 +62,42 @@ abstract class AbstractTemporalTest : AbstractIntegrationTest() {
     protected fun deleteClosedExecutions() {
         deleteExecutions(listWfApiClosed)
     }
+
+    protected fun mockServiceFailures(totalFailureRatio: Double) {
+        val compositeFailureSupplier = CompositeFailureSupplier(totalFailureRatio)
+
+        createFailingStubbing(compositeFailureSupplier.allocateFailureReceiver())
+            .`when`(fulfillmentService).shipItems(Mockito.anyLong())
+        createFailingStubbing(compositeFailureSupplier.allocateFailureReceiver())
+            .`when`(fulfillmentService).reserveItems(Mockito.anyLong())
+        createFailingStubbing(compositeFailureSupplier.allocateFailureReceiver())
+            .`when`(chargeService).performChargeOnReserve(Mockito.anyLong())
+        createFailingStubbing(compositeFailureSupplier.allocateFailureReceiver())
+            .`when`(chargeService).performCharge(any())
+    }
+
+    private class CompositeFailureSupplier(
+        val totalFailureRatio: Double
+    ) {
+        private var totalReceiversAllocated = 0
+        fun allocateFailureReceiver(): () -> Unit {
+            totalReceiversAllocated++
+            return {
+                val next = Random.nextDouble(0.0, 1.0)
+                if (next < totalFailureRatio / totalReceiversAllocated)
+                    throw TemporalNonRetryableException()
+            }
+        }
+    }
+
+    private fun createFailingStubbing(failureSupplier: () -> Unit) =
+        Mockito.doAnswer { invocation ->
+            transactionalInvoker.invoke {
+                val result = invocation.callRealMethod()
+                failureSupplier()
+                result
+            }
+        }!!
 
     private fun <ApiRequest_T, ApiResponse_T> processExecutions(
         api: ListWfApi<ApiRequest_T, ApiResponse_T>,

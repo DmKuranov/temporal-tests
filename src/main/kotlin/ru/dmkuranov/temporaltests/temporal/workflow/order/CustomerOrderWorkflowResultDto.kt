@@ -2,5 +2,6 @@ package ru.dmkuranov.temporaltests.temporal.workflow.order
 
 data class CustomerOrderWorkflowResultDto(
     val orderId: Long,
-    val valid: Boolean
+    val valid: Boolean? = null,
+    val failed: Boolean = false
 )

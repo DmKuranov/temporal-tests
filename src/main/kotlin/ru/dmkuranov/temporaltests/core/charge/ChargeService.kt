@@ -21,6 +21,11 @@ class ChargeService(
     private val clock: Clock
 ) {
 
+    @Transactional(readOnly = true)
+    fun getCharges(customerOrderId: Long): List<ChargeDto> =
+        customerChargeRepository.findByOrderId(customerOrderId)
+            .map { chargeMapper.map(it) }
+
     @Transactional
     fun performChargeOnReserve(customerOrderId: Long): ChargeDto {
         val order = customerOrderService.loadOrder(customerOrderId)
@@ -44,6 +49,16 @@ class ChargeService(
 
     @Transactional
     fun performCharge(chargeRequest: ChargeRequestDto): ChargeDto =
+        performChargeInternal(chargeRequest)
+
+    /**
+     * non-failing method
+     */
+    @Transactional
+    fun performChargeSafe(chargeRequest: ChargeRequestDto) =
+        performChargeInternal(chargeRequest)
+
+    private fun performChargeInternal(chargeRequest: ChargeRequestDto): ChargeDto =
         customerOrderService.loadOrder(chargeRequest.orderId)
             .let { order ->
                 customerChargeRepository.save(
