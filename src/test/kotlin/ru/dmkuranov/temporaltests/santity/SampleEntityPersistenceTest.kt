@@ -1,6 +1,7 @@
 package ru.dmkuranov.temporaltests.santity
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import org.junit.jupiter.api.Test
 import ru.dmkuranov.temporaltests.AbstractIntegrationTest
 import ru.dmkuranov.temporaltests.core.stock.dto.StockUpdateRequestDto
@@ -23,5 +24,15 @@ class SampleEntityPersistenceTest : AbstractIntegrationTest() {
             .copy(available = true, quantityAvailable = 10)
         val stockUpdated = stockService.updateStock(updateRequest)
         assertThat(stockUpdated.quantityAvailable).isEqualTo(quantityTarget)
+    }
+
+    @Test
+    fun notExistentEntities() {
+        assertThatIllegalArgumentException()
+            .isThrownBy { stockService.getStock(Long.MAX_VALUE) }
+        assertThatIllegalArgumentException()
+            .isThrownBy { customerOrderService.loadOrder(Long.MAX_VALUE) }
+        assertThatIllegalArgumentException()
+            .isThrownBy { customerOrderService.adjustOrderItem(Long.MAX_VALUE) }
     }
 }

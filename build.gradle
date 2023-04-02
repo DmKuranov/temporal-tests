@@ -1,3 +1,8 @@
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
+import kotlinx.kover.gradle.plugin.dsl.MetricType
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -7,6 +12,7 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.spring' version '1.7.22'
     id 'org.jetbrains.kotlin.plugin.jpa' version '1.7.22'
     id "io.gitlab.arturbosch.detekt" version "1.22.0"
+    id "org.jetbrains.kotlinx.kover" version "0.7.0-Alpha"
 }
 
 group = 'ru.dmkuranov'
@@ -42,10 +48,68 @@ tasks.withType(KotlinCompile) {
 
 tasks.named('test') {
     useJUnitPlatform()
+
+    testLogging {
+        events TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED
+        exceptionFormat TestExceptionFormat.FULL
+        showCauses true
+        showExceptions true
+        showStackTraces true
+        showStandardStreams false
+    }
 }
 
 detekt {
     allRules = true
     buildUponDefaultConfig = true
     config = files("detekt.yaml")
+}
+
+kover {
+    disabledForProject = false
+    useKoverTool()
+}
+
+koverReport {
+    filters {
+        excludes {
+            classes(
+                    "*\$log\$*",
+                    "*.TemporalTestsApplication*"
+            )
+            annotatedBy(
+                    "jakarta.persistence.Entity",
+                    "jakarta.persistence.MappedSuperclass"
+            )
+        }
+    }
+
+    html {
+        onCheck = true
+        setReportDir(layout.buildDirectory.dir("coverage-html-result"))
+
+    }
+
+    verify {
+        onCheck = true
+        rule {
+            entity = GroupingEntityType.APPLICATION
+
+            bound {
+                minValue = 95
+                metric = MetricType.LINE
+                aggregation = AggregationType.COVERED_PERCENTAGE
+            }
+        }
+
+        rule {
+            entity = GroupingEntityType.APPLICATION
+
+            bound {
+                minValue = 95
+                metric = MetricType.BRANCH
+                aggregation = AggregationType.COVERED_PERCENTAGE
+            }
+        }
+    }
 }

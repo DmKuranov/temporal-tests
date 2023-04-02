@@ -76,7 +76,12 @@ class CustomerOrderService(
     }
 
     private fun loadEntity(orderId: Long) =
-        customerOrderRepository.findById(orderId).get()
+        customerOrderRepository.findById(orderId).let {
+            if (it.isPresent)
+                it.get()
+            else
+                throw IllegalArgumentException("Customer order not found for id=$orderId")
+        }
 
     private val log = KotlinLogging.logger {}
 }
