@@ -25,6 +25,7 @@ repositories {
 
 ext {
     temporalJavaSdkVersion = "1.19.0"
+    testcontainersVersion = "1.18.0"
 }
 
 dependencies {
@@ -45,6 +46,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.assertj:assertj-core:3.24.2'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:4.1.0'
+    testImplementation "org.testcontainers:junit-jupiter:$testcontainersVersion"
+    testImplementation "org.testcontainers:postgresql:$testcontainersVersion"
 }
 
 tasks.withType(KotlinCompile) {

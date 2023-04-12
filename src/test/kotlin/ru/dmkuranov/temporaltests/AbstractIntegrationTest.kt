@@ -9,6 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import ru.dmkuranov.temporaltests.core.charge.ChargeService
 import ru.dmkuranov.temporaltests.core.charge.db.CustomerChargeRepository
 import ru.dmkuranov.temporaltests.core.customerorder.CustomerOrderService
@@ -31,6 +33,7 @@ import kotlin.random.Random
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation::class)
 @Suppress("UnnecessaryAbstractClass") // abstract members not required
 abstract class AbstractIntegrationTest {
+
     @Autowired
     protected lateinit var stockService: StockService
 
@@ -131,6 +134,24 @@ abstract class AbstractIntegrationTest {
             .divide(CURRENCY_MINIMAL_UNITS)
 
     companion object {
+        init {
+            ContainersInitializer.initialize()
+        }
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun setupContainersCredentials(registry: DynamicPropertyRegistry) {
+            val temporalServerMappedPort = ContainersInitializer.temporalServerContainer.firstMappedPort
+            val databaseMappedPort = ContainersInitializer.postgresContainer.firstMappedPort
+            registry.add("spring.temporal.connection.target") { "127.0.0.1:$temporalServerMappedPort" }
+            registry.add("spring.datasource.url") {
+                "jdbc:postgresql://localhost:" +
+                    databaseMappedPort + "/" + ContainersInitializer.temporalDbSetupDbDbNameApp
+            }
+            registry.add("spring.datasource.username") { ContainersInitializer.postgresUser }
+            registry.add("spring.datasource.password") { ContainersInitializer.postgresPassword }
+        }
+
         val MAX_ITEM_PRICE = BigDecimal("50")
         val CURRENCY_MINIMAL_UNITS = BigDecimal("100")
 
