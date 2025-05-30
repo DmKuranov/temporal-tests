@@ -81,6 +81,11 @@ object ContainersInitializer {
 
         uiContainer.start()
         log.info { "ui started on http://localhost:" + uiContainer.firstMappedPort }
+
+
+        // https://community.temporal.io/t/how-to-tell-the-namespace-is-ready-to-be-polled-by-workers/1606/2
+        // So I would recommend adding 20-second sleep in your scripts after the namespace registration as a workaround.
+        Thread.sleep(20000)
     }
 
     private fun initializeTemporalDb() {
