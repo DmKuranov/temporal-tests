@@ -10,7 +10,7 @@ import java.time.Duration
 
 object ContainersInitializer {
 
-    private const val temporalServerVersion = "1.20.1"
+    private const val temporalServerVersion = "1.27.2"
     private val containerNetwork = Network.newNetwork()!!
     private const val postgresInternalHost = "postgres-host"
     private const val temporalServerInternalHost = "temporal-server-host"
@@ -30,7 +30,7 @@ object ContainersInitializer {
         .withUsername(postgresUser)
         .withPassword(postgresPassword)!!
 
-    private val temporalAdminContainer = GenericContainer("temporalio/admin-tools:$temporalServerVersion")
+    private val temporalAdminContainer = GenericContainer("temporalio/admin-tools:1.27")
         .withNetwork(containerNetwork)
         .withCreateContainerCmdModifier {
             it.withEntrypoint("temporal-sql-tool")
@@ -81,11 +81,6 @@ object ContainersInitializer {
 
         uiContainer.start()
         log.info { "ui started on http://localhost:" + uiContainer.firstMappedPort }
-
-
-        // https://community.temporal.io/t/how-to-tell-the-namespace-is-ready-to-be-polled-by-workers/1606/2
-        // So I would recommend adding 20-second sleep in your scripts after the namespace registration as a workaround.
-        Thread.sleep(20000)
     }
 
     private fun initializeTemporalDb() {
@@ -105,13 +100,13 @@ object ContainersInitializer {
         val temporalDbSetupDbUpdateSchemaPathVisibility = "$temporalServerStoragePluginSchemaPathPrefix/visibility/versioned"
         listOf(
             temporalDbSetupDbCredentialOptions
-                .plusElement(temporalDbSetupDbDbNameKey).plusElement(escapeDbName(temporalDbSetupDbDbNameApp))
+                .plusElement(temporalDbSetupDbDbNameKey).plusElement(temporalDbSetupDbDbNameApp)
                 .plusElement(temporalDbSetupDbCreateDatabaseCommand),
             temporalDbSetupDbCredentialOptions
-                .plusElement(temporalDbSetupDbDbNameKey).plusElement(escapeDbName(temporalDbSetupDbDbNameServer))
+                .plusElement(temporalDbSetupDbDbNameKey).plusElement(temporalDbSetupDbDbNameServer)
                 .plusElement(temporalDbSetupDbCreateDatabaseCommand),
             temporalDbSetupDbCredentialOptions
-                .plusElement(temporalDbSetupDbDbNameKey).plusElement(escapeDbName(temporalDbSetupDbDbNameVisibility))
+                .plusElement(temporalDbSetupDbDbNameKey).plusElement(temporalDbSetupDbDbNameVisibility)
                 .plusElement(temporalDbSetupDbCreateDatabaseCommand),
 
             temporalDbSetupDbCredentialOptions
@@ -137,9 +132,6 @@ object ContainersInitializer {
             temporalAdminContainer.close()
         }
     }
-
-    private fun escapeDbName(dbName: String) =
-        "\"$dbName\""
 
     private val log = KotlinLogging.logger {}
 }
