@@ -10,7 +10,7 @@ import java.time.Duration
 
 object ContainersInitializer {
 
-    private const val temporalServerVersion = "1.27.2"
+    private const val temporalServerVersion = "1.29.4"
     private val containerNetwork = Network.newNetwork()!!
     private const val postgresInternalHost = "postgres-host"
     private const val temporalServerInternalHost = "temporal-server-host"
@@ -30,7 +30,7 @@ object ContainersInitializer {
         .withUsername(postgresUser)
         .withPassword(postgresPassword)!!
 
-    private val temporalAdminContainer = GenericContainer("temporalio/admin-tools:1.27")
+    private val temporalAdminContainer = GenericContainer("temporalio/admin-tools:$temporalServerVersion")
         .withNetwork(containerNetwork)
         .withCreateContainerCmdModifier {
             it.withEntrypoint("temporal-sql-tool")
@@ -72,7 +72,7 @@ object ContainersInitializer {
             .start()
         temporalAdminContainer.close()
 
-        val uiContainer = GenericContainer("temporalio/ui:2.14.0")
+        val uiContainer = GenericContainer("temporalio/ui:2.47.3")
             .withNetwork(containerNetwork)
             .withExposedPorts(8080)
             .withEnv("TEMPORAL_ADDRESS", "$temporalServerInternalHost:$temporalServerInternalPort")

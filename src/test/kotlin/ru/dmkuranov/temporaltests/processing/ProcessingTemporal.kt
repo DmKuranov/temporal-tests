@@ -148,6 +148,7 @@ class ProcessingTemporal : AbstractTemporalTest() {
                     .toBuilder()
                     .setTaskQueue(TemporalConfiguration.TASK_QUEUE_NAME)
                     .setWorkflowId(workflowId)
+                    .setDisableEagerExecution(false)
                     .build()
             )
 

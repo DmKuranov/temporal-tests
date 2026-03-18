@@ -6,21 +6,12 @@ import io.temporal.common.RetryOptions
 import io.temporal.common.converter.DataConverter
 import io.temporal.common.converter.DefaultDataConverter
 import io.temporal.common.converter.JacksonJsonPayloadConverter
-import io.temporal.spring.boot.autoconfigure.RootNamespaceAutoConfiguration
-import org.springframework.boot.ApplicationArguments
-import org.springframework.boot.ApplicationRunner
-import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Lazy
-import org.springframework.context.event.ContextStartedEvent
 import java.time.Duration
 
 @Configuration
-class TemporalConfiguration(
-    @Lazy private val starter: RootNamespaceAutoConfiguration.WorkerFactoryStarter,
-    private val applicationContext: ApplicationContext
-) : ApplicationRunner {
+class TemporalConfiguration {
 
     @Bean("mainDataConverter")
     fun mainDataConverter(): DataConverter =
@@ -31,10 +22,6 @@ class TemporalConfiguration(
                 DefaultDataConverter.newDefaultInstance()
                     .withPayloadConverterOverrides(it)
             }
-
-    override fun run(args: ApplicationArguments?) {
-        starter.onApplicationEvent(ContextStartedEvent(applicationContext))
-    }
 
     companion object {
         const val NAMESPACE_NAME = "default"
