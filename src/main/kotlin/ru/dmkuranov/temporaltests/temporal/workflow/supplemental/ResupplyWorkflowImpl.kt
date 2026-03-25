@@ -11,7 +11,7 @@ class ResupplyWorkflowImpl : ResupplyWorkflow {
         activities.performResupply(product)
     }
 
-    private val activities = Workflow.newActivityStub(
+    private val activities = Workflow.newLocalActivityStub(
         SupplementalActivities::class.java,
         TemporalConfiguration.ACTIVITY_OPTIONS_DEFAULT
     )!!

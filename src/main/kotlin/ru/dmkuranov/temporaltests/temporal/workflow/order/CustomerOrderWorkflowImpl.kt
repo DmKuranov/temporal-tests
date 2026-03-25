@@ -69,7 +69,7 @@ class CustomerOrderWorkflowImpl : CustomerOrderWorkflow {
         }
     }
 
-    private val activities = Workflow.newActivityStub(
+    private val activities = Workflow.newLocalActivityStub(
         CustomerOrderActivities::class.java,
         TemporalConfiguration.ACTIVITY_OPTIONS_DEFAULT
     )!!

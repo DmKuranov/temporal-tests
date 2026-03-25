@@ -1,7 +1,7 @@
 package ru.dmkuranov.temporaltests.temporal
 
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import io.temporal.activity.ActivityOptions
+import io.temporal.activity.LocalActivityOptions
 import io.temporal.common.RetryOptions
 import io.temporal.common.converter.DataConverter
 import io.temporal.common.converter.DefaultDataConverter
@@ -34,9 +34,10 @@ class TemporalConfiguration {
                 TemporalNonRetryableException::class.java.name
             )
             .build()!!
-        val ACTIVITY_OPTIONS_DEFAULT = ActivityOptions.newBuilder()
+        val ACTIVITY_OPTIONS_DEFAULT = LocalActivityOptions.newBuilder()
             .setStartToCloseTimeout(Duration.ofSeconds(10))
             .setRetryOptions(RETRY_OPTIONS_DEFAULT)
+            .setScheduleToCloseTimeout(Duration.ofSeconds(30))
             .build()!!
     }
 }
