@@ -3,9 +3,8 @@ package ru.dmkuranov.temporaltests.processing
 import io.temporal.api.common.v1.WorkflowExecution
 import io.temporal.client.WorkflowClient
 import io.temporal.client.WorkflowOptions
+import io.temporal.client.WorkflowTargetOptions
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
@@ -25,7 +24,6 @@ import ru.dmkuranov.temporaltests.temporal.workflow.supplemental.StealerWorkflow
 import ru.dmkuranov.temporaltests.util.asserts.SnapshotStateDeltaAssert
 import ru.dmkuranov.temporaltests.util.supplier.OrderCreateRequestSupplier
 import java.math.BigDecimal
-import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 class ProcessingTemporal : AbstractTemporalTest() {
@@ -180,7 +178,7 @@ class ProcessingTemporal : AbstractTemporalTest() {
         val productCount = 10
         val ordersToProcess = 300
         val orderCreateRequestSupplier = orderCreateRequestSupplierBuilder
-            .builder(createProducts(count = productCount, initialStockQuantity = 10000000))
+            .builder(createProducts(count = productCount, initialStockQuantity = 10_000_000))
             .copy(maxItemQuantity = 25).build()
 
         val snapshot = snapshotService.createSnapshot()
@@ -275,7 +273,7 @@ class ProcessingTemporal : AbstractTemporalTest() {
         val productCount = 10
         val ordersToProcess = 300
         val orderCreateRequestSupplier = orderCreateRequestSupplierBuilder
-            .builder(createProducts(count = productCount, initialStockQuantity = 10000000))
+            .builder(createProducts(count = productCount, initialStockQuantity = 10_000_000))
             .copy(maxItemQuantity = 25).build()
 
         val snapshot = snapshotService.createSnapshot()
@@ -384,7 +382,8 @@ class ProcessingTemporal : AbstractTemporalTest() {
         } finally {
             shutdownableWorkflows.forEach { it.first.shutdown() }
             shutdownableWorkflows.forEach {
-                workflowClient.newUntypedWorkflowStub(it.second, Optional.empty())
+                workflowClient.newUntypedWorkflowStub(WorkflowTargetOptions.newBuilder()
+                    .setWorkflowExecution(it.second).build())
                     .getResult(5, TimeUnit.SECONDS, Unit::class.java)
             }
         }

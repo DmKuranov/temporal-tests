@@ -16,7 +16,7 @@ class TemporalConfiguration {
     @Bean("mainDataConverter")
     fun mainDataConverter(): DataConverter =
         JacksonJsonPayloadConverter.newDefaultObjectMapper()
-            .also { it.registerKotlinModule() }
+            .apply { registerKotlinModule() }
             .let { JacksonJsonPayloadConverter(it) }
             .let {
                 DefaultDataConverter.newDefaultInstance()

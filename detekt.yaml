@@ -3,6 +3,20 @@ style:
     maxLineLength: 160
   UseRequire:
     active: false
+  BracesOnIfStatements:
+    active: false
+  ClassOrdering:
+    active: false
+  UnnecessaryParentheses:
+    active: false
+  ExpressionBodySyntax:
+    active: false
+  UnderscoresInNumericLiterals:
+    acceptableLength: 5
+  CascadingCallWrapping:
+    active: false
+  DataClassContainsFunctions:
+    active: false
 empty-blocks:
   EmptyClassBlock:
     active: false
@@ -12,3 +26,11 @@ potential-bugs:
 exceptions:
   TooGenericExceptionCaught:
     active: false
+naming:
+  FunctionNameMaxLength:
+    active: false
+comments:
+  active: false
+complexity:
+  CognitiveComplexMethod:
+    allowedComplexity: 35

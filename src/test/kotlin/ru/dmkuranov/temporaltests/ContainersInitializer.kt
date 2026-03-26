@@ -40,7 +40,7 @@ object ContainersInitializer {
     val temporalServerContainer = GenericContainer("temporalio/server:$temporalServerVersion")
         .withNetwork(containerNetwork)
         .withNetworkAliases(temporalServerInternalHost)
-        .withExposedPorts(temporalServerInternalPort)
+        .withExposedPorts(temporalServerInternalPort, 9091)
         .withEnv("TEMPORAL_BROADCAST_ADDRESS", "0.0.0.0")
         .withEnv("BIND_ON_IP", "0.0.0.0")
         .withEnv("NUM_HISTORY_SHARDS", "10")
@@ -50,7 +50,9 @@ object ContainersInitializer {
         .withEnv("DBNAME", temporalDbSetupDbDbNameServer)
         .withEnv("VISIBILITY_DBNAME", temporalDbSetupDbDbNameVisibility)
         .withEnv("POSTGRES_USER", postgresUser)
-        .withEnv("POSTGRES_PWD", postgresPassword)!!
+        .withEnv("POSTGRES_PWD", postgresPassword)
+        .withEnv("PROMETHEUS_ENDPOINT", "0.0.0.0:9091")!!
+        .also { it.portBindings = listOf("9091:9091")}
 
     fun initialize() {
         postgresContainer.start()

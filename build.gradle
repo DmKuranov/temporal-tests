@@ -1,23 +1,24 @@
-import kotlinx.kover.gradle.plugin.dsl.AggregationType
-import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
-import kotlinx.kover.gradle.plugin.dsl.MetricType
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id 'org.springframework.boot' version '3.0.3'
+    id 'org.springframework.boot' version '3.5.12'
     id 'io.spring.dependency-management' version '1.1.0'
-    id 'org.jetbrains.kotlin.jvm' version '1.7.22'
-    id 'org.jetbrains.kotlin.plugin.spring' version '1.7.22'
-    id 'org.jetbrains.kotlin.plugin.jpa' version '1.7.22'
-    id "io.gitlab.arturbosch.detekt" version "1.22.0"
-    id "org.jetbrains.kotlinx.kover" version "0.7.0-Alpha"
+    id 'org.jetbrains.kotlin.jvm' version '2.2.20'
+    id 'org.jetbrains.kotlin.plugin.spring' version '2.2.20'
+    id 'org.jetbrains.kotlin.plugin.jpa' version '2.2.20'
+    id "dev.detekt" version "2.0.0-alpha.1"
+    id "org.jetbrains.kotlinx.kover" version "0.9.8"
 }
 
 group = 'ru.dmkuranov'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 repositories {
     mavenCentral()
@@ -25,7 +26,7 @@ repositories {
 
 ext {
     temporalJavaSdkVersion = "1.33.0"
-    testcontainersVersion = "1.18.0"
+    testcontainersVersion = "1.21.4"
 }
 
 dependencies {
@@ -33,6 +34,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'org.liquibase:liquibase-core'
@@ -50,10 +53,10 @@ dependencies {
     testImplementation "org.testcontainers:postgresql:$testcontainersVersion"
 }
 
-tasks.withType(KotlinCompile) {
-    kotlinOptions {
-        freeCompilerArgs = ['-Xjsr305=strict']
-        jvmTarget = '17'
+tasks.withType(KotlinCompile).configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-Xjsr305=strict")
+        jvmTarget = JvmTarget.JVM_21
     }
     dependsOn(tasks.detekt)
 }
@@ -63,11 +66,11 @@ tasks.named('test') {
 
     testLogging {
         events TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED
-        exceptionFormat TestExceptionFormat.FULL
-        showCauses true
-        showExceptions true
-        showStackTraces true
-        showStandardStreams false
+        exceptionFormat = TestExceptionFormat.FULL
+        showCauses = true
+        showExceptions = true
+        showStackTraces = true
+        showStandardStreams = false
     }
 }
 
@@ -78,49 +81,25 @@ detekt {
 }
 
 kover {
-    disabledForProject = false
-    useKoverTool()
-}
-
-koverReport {
-    filters {
-        excludes {
-            classes(
-                    "*\$log\$*",
-                    "*.TemporalTestsApplication*"
-            )
-            annotatedBy(
-                    "jakarta.persistence.Entity",
-                    "jakarta.persistence.MappedSuperclass"
-            )
-        }
-    }
-
-    html {
-        onCheck = true
-        setReportDir(layout.buildDirectory.dir("coverage-html-result"))
-
-    }
-
-    verify {
-        onCheck = true
-        rule {
-            entity = GroupingEntityType.APPLICATION
-
-            bound {
-                minValue = 95
-                metric = MetricType.LINE
-                aggregation = AggregationType.COVERED_PERCENTAGE
+    reports {
+        filters {
+            excludes {
+                // exclusion rules - classes to exclude from report
+                classes(
+                        "*\$log\$*",
+                        "*.TemporalTestsApplication*"
+                )
+                annotatedBy(
+                        "jakarta.persistence.Entity",
+                        "jakarta.persistence.MappedSuperclass"
+                )
             }
         }
-
-        rule {
-            entity = GroupingEntityType.APPLICATION
-
-            bound {
-                minValue = 95
-                metric = MetricType.BRANCH
-                aggregation = AggregationType.COVERED_PERCENTAGE
+        verify {
+            rule {
+                bound {
+                    minValue= 95
+                }
             }
         }
     }

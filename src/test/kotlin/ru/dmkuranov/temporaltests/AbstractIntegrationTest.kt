@@ -6,11 +6,11 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import ru.dmkuranov.temporaltests.core.charge.ChargeService
 import ru.dmkuranov.temporaltests.core.charge.db.CustomerChargeRepository
 import ru.dmkuranov.temporaltests.core.customerorder.CustomerOrderService
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.random.Random
 
 @ActiveProfiles("test")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = ["spring.main.allow-bean-definition-overriding = true"])
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = ["spring.main.allow-bean-definition-overriding = true"])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation::class)
 @Suppress("UnnecessaryAbstractClass") // abstract members not required
@@ -37,13 +37,13 @@ abstract class AbstractIntegrationTest {
     @Autowired
     protected lateinit var stockService: StockService
 
-    @SpyBean
+    @MockitoSpyBean
     protected lateinit var customerOrderService: CustomerOrderService
 
-    @SpyBean
+    @MockitoSpyBean
     protected lateinit var fulfillmentService: FulfillmentService
 
-    @SpyBean
+    @MockitoSpyBean
     protected lateinit var chargeService: ChargeService
 
     @Autowired

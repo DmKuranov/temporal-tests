@@ -30,7 +30,7 @@ class ResupplyPlannerWorkflowImpl : ResupplyPlannerWorkflow {
             )
             try {
                 stealer.onResupplyFinished()
-            } catch (@Suppress("SwallowedException") e: WorkflowFailedException) {
+            } catch (@Suppress("SwallowedException") e: Exception) {
                 // swallow it
                 // stealer workflow could be completed
             }
